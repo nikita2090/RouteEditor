@@ -1,0 +1,5 @@
+.pointsWrap {
+    flex: 1 1 40%;
+    box-sizing: border-box;
+    margin-right: 20px;
+}
