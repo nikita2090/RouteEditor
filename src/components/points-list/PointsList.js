@@ -6,13 +6,15 @@ import Point from '../point/Point';
 import './PointsList.css';
 
 
-const PointsList = ({points, deletePoint}) => (
-    <div>
+const PointsList = ({points, deletePoint, onDragPoint}) => (
+    <div id="pointsList"
+         className="pointList">
         {points.map((point) => (
             <Point key={point.id}
                    value={point.name}
                    id={point.id}
                    deletePoint={deletePoint}
+                   onDragPoint={onDragPoint}
             />
         ))}
     </div>
@@ -20,11 +22,15 @@ const PointsList = ({points, deletePoint}) => (
 
 
 PointsList.propTypes = {
-    routes: PropTypes.array
+    points: PropTypes.array,
+    deletePoint: PropTypes.func,
+    onDragPoint: PropTypes.func
 };
 
 PointsList.defaultProps = {
-    routes: []
+    points: [],
+    deletePoint: () => {},
+    onDragPoint: () => {}
 };
 
 export default React.memo(PointsList);

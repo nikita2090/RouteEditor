@@ -21,13 +21,15 @@ const Input = ({value, handleInputChange, onEnterPress, tooltip}) => (
 Input.propTypes = {
     value: PropTypes.string,
     handleInputChange: PropTypes.func,
-    onEnterPress: PropTypes.func
+    onEnterPress: PropTypes.func,
+    tooltip: PropTypes.bool
 };
 
 Input.defaultProps = {
     value: '',
     handleInputChange: () => {},
-    onEnterPress: () => {}
+    onEnterPress: () => {},
+    tooltip: false
 };
 
 export default Input;

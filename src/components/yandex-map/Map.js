@@ -1,24 +1,11 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import './Map.css';
 
 
-const Map = ({children}) => (
-    <div className="map"
-         id="map">
-        {children}
-    </div>
+const Map = () => (
+    <div className="map" id="map"/>
 );
-
-
-Map.propTypes = {
-
-};
-
-Map.defaultProps = {
-
-};
 
 export default Map;
 
