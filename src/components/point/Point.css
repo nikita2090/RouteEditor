@@ -1,26 +1,31 @@
 .point {
     width: 100%;
-    height: 30px;
+    min-height: 34px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-sizing: border-box;
+    border-radius: 4px;
     padding: 0 10px;
-    border-bottom: 1px solid white;
+    margin-bottom: 2px;
     background-color: dodgerblue;
     color: white;
+    cursor: move;
+}
+
+.point.gu-transit {
+    background-color: rgba(30, 144, 255, 0.6);
+}
+
+.gu-mirror {
+    display: none;
 }
 
 .pointName {
-    cursor: default;
+    cursor: move;
 }
 
 .fas.fa-times:hover {
-    color: lightpink;
+    color: #ffd754;
+    cursor: default;
 }
-
-.drag {
-    position: absolute;
-    z-index: 1000;
-}
-

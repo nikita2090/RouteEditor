@@ -4,18 +4,19 @@ import PropTypes from 'prop-types';
 import './Input.css';
 
 
-const Input = ({value, handleInputChange, onEnterPress, tooltip}) => (
+const Input = React.forwardRef(({value, handleInputChange, onEnterPress, tooltip}, ref) => (
     <>
-        {tooltip && <div className="tooltip">nothing found</div>}
+        {tooltip && <div className="tooltip">not found</div>}
         <input type="text"
                className="input"
                value={value}
                onChange={handleInputChange}
                onKeyPress={onEnterPress}
                placeholder="Search..."
+               ref={ref}
         />
     </>
-);
+));
 
 
 Input.propTypes = {
@@ -33,3 +34,4 @@ Input.defaultProps = {
 };
 
 export default Input;
+

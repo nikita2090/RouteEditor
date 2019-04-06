@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
+import dragula from 'react-dragula';
 
 import PointsWrap from '../points-wrap/PointsWrap';
 import Input from '../input/Input';
 import PointsList from '../points-list/PointsList';
 import Map from '../yandex-map/Map';
-import getCoords from '../../functions/getCoords';
 import './Main.css';
 
 const ymaps = window.ymaps;
@@ -19,9 +19,12 @@ class Main extends Component {
                 center: [55.75, 37.57],
                 zoom: 12
             },
+            tooltip: false
         };
-        this.yaMap = null;
+        this.input = React.createRef();
         this.route = null;
+        this.yaMap = null; //instance of YandexMap
+        this.dragAndDrop = null; //instance of dragula
     }
 
     componentDidMount() {
@@ -30,6 +33,9 @@ class Main extends Component {
         } catch (err) {
             alert(err);
         }
+
+        this.input.current.focus();
+        this.initDNDonPointsList();
     };
 
 
@@ -44,41 +50,6 @@ class Main extends Component {
         this.paintPolyline();
     };
 
-
-    getGeoObjData = (geoObj) => {
-        const name = geoObj.properties.get('name');
-        const coords = geoObj.geometry.getCoordinates();
-        const baloonContent = geoObj.properties.get('balloonContent');
-
-        return {
-            name,
-            coords,
-            baloonContent
-        }
-    };
-
-    createPointObj = (geoObj) => {
-        const id = new Date().getTime();
-        const geoObjData = this.getGeoObjData(geoObj);
-        const {name, coords, baloonContent} = geoObjData;
-        const geoObject = new ymaps.GeoObject({
-            geometry: {
-                type: "Point",
-                coordinates: coords
-            },
-            properties: {
-                hintContent: 'Перетащите метку при необходимости',
-                balloonContent: baloonContent
-            },
-        }, {draggable: true});
-
-        return {
-            geoObject,
-            id,
-            name,
-            coords
-        }
-    };
 
     addPoint = async () => {
         const {inputText, mapOptions, points} = this.state;
@@ -128,29 +99,30 @@ class Main extends Component {
                 const geocoder = await ymaps.geocode(coordsForSearch);
                 newSearchResult = await geocoder.geoObjects.get(0);
             } catch (err) {
-                alert(err);
+                alert('Too Many Requests');
             }
 
-            const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);
-            geoObject.properties.set('balloonContent', baloonContent);
-            geoObject.geometry.setCoordinates(coords);
+            if (newSearchResult) {
+                const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);
+                geoObject.properties.set('balloonContent', baloonContent);
+                geoObject.geometry.setCoordinates(coords);
 
-            const newPoint = {
-                geoObject,
-                id,
-                name,
-                coords,
-            };
+                const newPoint = {
+                    geoObject,
+                    id,
+                    name,
+                    coords,
+                };
 
-            const {points} = this.state;
-            const newPoints = [...points];
-            const targetPoint = newPoints.find(point => (point.id === id));
-            const targetPointIndex = newPoints.indexOf(targetPoint);
-            newPoints[targetPointIndex] = newPoint;
+                const {points} = this.state;
+                const newPoints = [...points];
+                const targetPointIndex = newPoints.findIndex(point => (point.id === id));
+                newPoints[targetPointIndex] = newPoint;
 
-            this.setState({
-                points: newPoints,
-            }, this.paintPolyline);
+                this.setState({
+                    points: newPoints,
+                }, this.paintPolyline);
+            }
         });
     };
 
@@ -158,7 +130,7 @@ class Main extends Component {
         const {points, mapOptions} = this.state;
         const targetPoint = points.find(point => (point.id === id));
         const {geoObject} = targetPoint;
-        const newPoints = [...points].filter(point => (point.id !== id));
+        const newPoints = points.filter(point => (point.id !== id));
 
         let lastPointCoords;
         if (newPoints.length) {
@@ -173,6 +145,71 @@ class Main extends Component {
             points: newPoints,
             mapOptions: {...mapOptions, center: lastPointCoords}
         }, this.updateMap);
+    };
+
+    initDNDonPointsList() {
+        const dragContainer = document.querySelector('.pointList');
+        this.dragAndDrop = dragula([dragContainer]);
+        this.dragAndDrop.on('drop', this.onDrop);
+    }
+
+    onDrop = (elem, container, from, siblingElem) => {
+        const elemId = +elem.getAttribute('id');
+        const {points, mapOptions} = this.state;
+        const targetPoint = points.find(point => (point.id === elemId));
+
+        let siblingElemIndex;
+        if (siblingElem) {
+            const siblingElemId = +siblingElem.getAttribute('id');
+            siblingElemIndex = [...points].findIndex(point => (point.id === siblingElemId))
+        } else {
+            siblingElemIndex = [...points].length - 1;
+        }
+
+        const newPoints = [...points].filter(point => (point.id !== elemId));
+        newPoints.splice(siblingElemIndex, 0, targetPoint);
+        console.log(newPoints);
+
+        this.setState({
+            points: newPoints,
+            mapOptions: {...mapOptions, center: targetPoint.coords}
+        }, this.updateMap);
+    };
+
+
+    getGeoObjData = (geoObj) => {
+        const name = geoObj.properties.get('name');
+        const coords = geoObj.geometry.getCoordinates();
+        const baloonContent = geoObj.properties.get('balloonContent');
+
+        return {
+            name,
+            coords,
+            baloonContent
+        }
+    };
+
+    createPointObj = (geoObj) => {
+        const id = new Date().getTime();
+        const geoObjData = this.getGeoObjData(geoObj);
+        const {name, coords, baloonContent} = geoObjData;
+        const geoObject = new ymaps.GeoObject({
+            geometry: {
+                type: "Point",
+                coordinates: coords
+            },
+            properties: {
+                hintContent: 'Перетащите метку при необходимости',
+                balloonContent: baloonContent
+            },
+        }, {draggable: true});
+
+        return {
+            geoObject,
+            id,
+            name,
+            coords
+        }
     };
 
     paintPolyline = () => {
@@ -212,42 +249,6 @@ class Main extends Component {
         }
     };
 
-    onDragPoint = (id, e) => {
-        if (e.target.tagName === 'I') return;
-        const target = e.target.closest('.point');
-        if (!target) return;
-
-        const pointCoords = getCoords(target);
-        const shiftY = e.pageY - pointCoords.top;
-        const targetWidth = target.offsetWidth;
-
-        target.classList.add('drag');
-        target.style.width = targetWidth + 'px';
-
-        const moveVertically = (e) => {
-            target.style.top = e.pageY - shiftY + 'px';
-        };
-
-        moveVertically(e);
-
-        document.onmousemove = (e) => {
-            moveVertically(e);
-        };
-
-        target.onmouseup = () => {
-            document.onmousemove = target.onmouseup = null;
-            target.classList.remove('drag');
-            target.style.width = '100%';
-
-            const {points, mapOptions} = this.state;
-            const targetPoint = points.find(point => (point.id === id));
-            const coords = targetPoint.coords;
-            this.setState({
-                points: [...points].filter(point => (point.id !== id)).concat(targetPoint),
-                mapOptions: {...mapOptions, center: coords}
-            }, this.updateMap);
-        };
-    };
 
     render() {
         const {inputText, tooltip, points} = this.state;
@@ -258,10 +259,11 @@ class Main extends Component {
                            handleInputChange={this.handleInputChange}
                            onEnterPress={this.onEnterPress}
                            tooltip={tooltip}
+                           ref={this.input}
                     />
                     <PointsList points={points}
                                 deletePoint={this.deletePoint}
-                                onDragPoint={this.onDragPoint}/>
+                    />
                 </PointsWrap>
                 <Map/>
             </main>
