@@ -6,15 +6,15 @@ import './Input.css';
 
 const Input = React.forwardRef(({value, handleInputChange, onEnterPress, tooltip}, ref) => (
     <>
-        {tooltip && <div className="tooltip">not found</div>}
-        <input type="text"
-               className="input"
-               value={value}
-               onChange={handleInputChange}
-               onKeyPress={onEnterPress}
-               placeholder="Search..."
-               ref={ref}
-        />
+    {tooltip && <div className="tooltip">not found</div>}
+    <input type="text"
+           className="input"
+           value={value}
+           onChange={handleInputChange}
+           onKeyPress={onEnterPress}
+           placeholder="Search..."
+           ref={ref}
+    />
     </>
 ));
 
@@ -33,5 +33,5 @@ Input.defaultProps = {
     tooltip: false
 };
 
-export default Input;
+export default React.memo(Input);
 

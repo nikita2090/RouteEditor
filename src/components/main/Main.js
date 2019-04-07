@@ -15,15 +15,13 @@ class Main extends Component {
         this.state = {
             inputText: '',
             points: [],
-            mapOptions: {
-                center: [55.75, 37.57],
-                zoom: 12
-            },
             tooltip: false
         };
+
         this.input = React.createRef();
+        this.toCenter = [];
         this.route = null;
-        this.yaMap = null; //instance of YandexMap
+        this.yaMap = null; //instance of YandexMaps
         this.dragAndDrop = null; //instance of dragula
     }
 
@@ -40,19 +38,21 @@ class Main extends Component {
 
 
     initMap = () => {
-        const {mapOptions} = this.state;
-        this.yaMap = new ymaps.Map('map', mapOptions);
+        this.yaMap = new ymaps.Map('map', {
+            center: [55.75, 37.57],
+            zoom: 12
+        });
     };
 
     updateMap = () => {
-        const {mapOptions: {center}} = this.state;
-        this.yaMap.setCenter(center);
+        this.yaMap.setCenter(this.toCenter);//set map center from saved coords
         this.paintPolyline();
     };
 
 
     addPoint = async () => {
-        const {inputText, mapOptions, points} = this.state;
+        //search for geo objects by entered value
+        const {inputText, points} = this.state;
         let searchResult;
         try {
             const geocoder = await ymaps.geocode(inputText, {
@@ -65,16 +65,16 @@ class Main extends Component {
         }
 
         if (searchResult) {
-            const newPoint = this.createPointObj(searchResult);
+            const newPoint = this.createPointObj(searchResult);//create new Point object with necessary data
             const {geoObject, coords} = newPoint;
-            this.yaMap.geoObjects.add(geoObject);
+            this.yaMap.geoObjects.add(geoObject);// add new point on map
 
-            this.addDragEventsOnMapPoint(newPoint);
+            this.addDragEventsOnMapPoint(newPoint);//add event handlers for dragging points on the map
 
+            this.toCenter = coords; //save coords of our new point
             this.setState({
                 inputText: '',
                 points: [...points, newPoint],
-                mapOptions: {...mapOptions, center: coords},
                 tooltip: false
             }, this.updateMap);
         } else {
@@ -93,6 +93,7 @@ class Main extends Component {
         });
 
         geoObject.events.add('dragend', async () => {
+            //search for geo objects by new coorinates
             const coordsForSearch = geoObject.geometry.getCoordinates();
             let newSearchResult;
             try {
@@ -103,9 +104,11 @@ class Main extends Component {
             }
 
             if (newSearchResult) {
-                const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);
+                const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);//get neccesary data from search result
+
+                //change our dragged geoobject
                 geoObject.properties.set('balloonContent', baloonContent);
-                geoObject.geometry.setCoordinates(coords);
+                geoObject.geometry.setCoordinates(coords);//move our point to cordinates of found geoobject
 
                 const newPoint = {
                     geoObject,
@@ -116,8 +119,8 @@ class Main extends Component {
 
                 const {points} = this.state;
                 const newPoints = [...points];
-                const targetPointIndex = newPoints.findIndex(point => (point.id === id));
-                newPoints[targetPointIndex] = newPoint;
+                const targetPointIndex = newPoints.findIndex(point => (point.id === id));//remove dragged point from list
+                newPoints[targetPointIndex] = newPoint;//add dragged point to a new position in list
 
                 this.setState({
                     points: newPoints,
@@ -127,23 +130,21 @@ class Main extends Component {
     };
 
     deletePoint = (id) => {
-        const {points, mapOptions} = this.state;
-        const targetPoint = points.find(point => (point.id === id));
+        const {points} = this.state;
+        const targetPoint = points.find(point => (point.id === id)); //search target point object in list
         const {geoObject} = targetPoint;
-        const newPoints = points.filter(point => (point.id !== id));
+        const newPoints = points.filter(point => (point.id !== id));//delete target point from list
 
-        let lastPointCoords;
         if (newPoints.length) {
-            lastPointCoords = newPoints[newPoints.length - 1].coords;
-        } else {
-            lastPointCoords = mapOptions.center;
+            //if list isn't empty use last point coordinates
+            this.toCenter = newPoints[newPoints.length - 1].coords;
+            //and if list is empty, use the old value
         }
 
-        this.yaMap.geoObjects.remove(geoObject);
+        this.yaMap.geoObjects.remove(geoObject);//remove target point from map
 
         this.setState({
             points: newPoints,
-            mapOptions: {...mapOptions, center: lastPointCoords}
         }, this.updateMap);
     };
 
@@ -153,26 +154,30 @@ class Main extends Component {
         this.dragAndDrop.on('drop', this.onDrop);
     }
 
-    onDrop = (elem, container, from, siblingElem) => {
-        const elemId = +elem.getAttribute('id');
-        const {points, mapOptions} = this.state;
-        const targetPoint = points.find(point => (point.id === elemId));
+    onDrop = (elem, _, __, siblingElem) => {
+        const elemId = +elem.getAttribute('id'); //get dropped dom-elem's id
+        const {points} = this.state;
 
-        let siblingElemIndex;
+        const targetPoint = points.find(point => (point.id === elemId)); //search target point object in list
+        const targetPointIndex = points.indexOf(targetPoint);
+
+        let newElemIndex;
         if (siblingElem) {
-            const siblingElemId = +siblingElem.getAttribute('id');
-            siblingElemIndex = [...points].findIndex(point => (point.id === siblingElemId))
+            const siblingElemId = +siblingElem.getAttribute('id'); //get id of dom-elem that comes after dropped elem
+            newElemIndex = [...points].findIndex(point => (point.id === siblingElemId));
         } else {
-            siblingElemIndex = [...points].length - 1;
+            newElemIndex = [...points].length; //if no dom-elem after dropped dom-elem
         }
 
-        const newPoints = [...points].filter(point => (point.id !== elemId));
-        newPoints.splice(siblingElemIndex, 0, targetPoint);
-        console.log(newPoints);
+        const newPoints= [...points];
+        delete newPoints[targetPointIndex];// delete target point from old index
+        newPoints.splice(newElemIndex, 0, targetPoint); //add elem to new place in list
+        const newPointsFiltered = newPoints.filter((el) => (el));// delete "gaps" from list
+        console.log(newPointsFiltered);
 
+        this.toCenter = targetPoint.coords; //save coords of target point
         this.setState({
-            points: newPoints,
-            mapOptions: {...mapOptions, center: targetPoint.coords}
+            points: newPointsFiltered,
         }, this.updateMap);
     };
 
@@ -215,7 +220,7 @@ class Main extends Component {
     paintPolyline = () => {
         this.deleteOldPolyline();
         const {points} = this.state;
-        const polylineCoords = points.map(point => (point.coords));
+        const polylineCoords = points.map(point => (point.coords));//create new arr with coords of all points
 
         const polyline = new ymaps.Polyline(
             polylineCoords,
@@ -226,8 +231,8 @@ class Main extends Component {
                 strokeOpacity: 0.5
             }
         );
-        this.yaMap.geoObjects.add(polyline);
-        this.route = polyline;
+        this.yaMap.geoObjects.add(polyline);//add polyline to map
+        this.route = polyline;//save polyline
     };
 
     deleteOldPolyline() {
@@ -259,11 +264,9 @@ class Main extends Component {
                            handleInputChange={this.handleInputChange}
                            onEnterPress={this.onEnterPress}
                            tooltip={tooltip}
-                           ref={this.input}
-                    />
+                           ref={this.input}/>
                     <PointsList points={points}
-                                deletePoint={this.deletePoint}
-                    />
+                                deletePoint={this.deletePoint}/>
                 </PointsWrap>
                 <Map/>
             </main>
