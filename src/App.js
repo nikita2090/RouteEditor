@@ -1,9 +1,8 @@
 import React from 'react';
-//import logo from './logo.svg';
 
 import Wrapper from './components/wrapper/Wrapper';
 import Title from './components/title/Title';
-import Main from './components/main/Main';
+import Main from './container/main/Main';
 
 import './App.css';
 

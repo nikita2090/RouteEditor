@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
 import dragula from 'react-dragula';
 
-import PointsWrap from '../points-wrap/PointsWrap';
-import Input from '../input/Input';
-import PointsList from '../points-list/PointsList';
-import Map from '../yandex-map/Map';
+import PointsWrap from '../../components/points-wrap/PointsWrap';
+import Input from '../../components/input/Input';
+import PointsList from '../../components/points-list/PointsList';
+import Map from '../../components/yandex-map/Map';
 import './Main.css';
 
 const ymaps = window.ymaps;
@@ -173,7 +173,6 @@ class Main extends Component {
         delete newPoints[targetPointIndex];// delete target point from old index
         newPoints.splice(newElemIndex, 0, targetPoint); //add elem to new place in list
         const newPointsFiltered = newPoints.filter((el) => (el));// delete "gaps" from list
-        console.log(newPointsFiltered);
 
         this.toCenter = targetPoint.coords; //save coords of target point
         this.setState({
