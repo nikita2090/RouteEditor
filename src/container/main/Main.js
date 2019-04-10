@@ -23,6 +23,8 @@ class Main extends Component {
         this.route = null;
         this.yaMap = null; //instance of YandexMaps
         this.dragAndDrop = null; //instance of dragula
+
+        this.onMapPointDragEnd = null;
     }
 
     componentDidMount() {
@@ -68,9 +70,7 @@ class Main extends Component {
             const newPoint = this.createPointObj(searchResult);//create new Point object with necessary data
             const {geoObject, coords} = newPoint;
             this.yaMap.geoObjects.add(geoObject);// add new point on map
-
             this.addDragEventsOnMapPoint(newPoint);//add event handlers for dragging points on the map
-
             this.toCenter = coords; //save coords of our new point
             this.setState({
                 inputText: '',
@@ -86,47 +86,47 @@ class Main extends Component {
     };
 
     addDragEventsOnMapPoint = (point) => {
+        const {geoObject} = point;
+        geoObject.events.add('dragstart', this.onMapPointDragStart);
+        this.onMapPointDragEnd = this.changePoint.bind(this, point);
+        geoObject.events.add('dragend', this.onMapPointDragEnd);
+    };
+
+    changePoint = async (point) => {
         const {geoObject, id} = point;
+        //search for geo objects by new coordinates
+        const coordsForSearch = geoObject.geometry.getCoordinates();
+        let newSearchResult;
+        try {
+            const geocoder = await ymaps.geocode(coordsForSearch);
+            newSearchResult = await geocoder.geoObjects.get(0);
+        } catch (err) {
+            alert('Too Many Requests');
+        }
 
-        geoObject.events.add('dragstart', () => {
-            this.deleteOldPolyline();
-        });
+        if (newSearchResult) {
+            const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);//get necessary data from search result
 
-        geoObject.events.add('dragend', async () => {
-            //search for geo objects by new coorinates
-            const coordsForSearch = geoObject.geometry.getCoordinates();
-            let newSearchResult;
-            try {
-                const geocoder = await ymaps.geocode(coordsForSearch);
-                newSearchResult = await geocoder.geoObjects.get(0);
-            } catch (err) {
-                alert('Too Many Requests');
-            }
+            //change our dragged geoobject
+            geoObject.properties.set('balloonContent', baloonContent);
+            geoObject.geometry.setCoordinates(coords);//move our point to coordinates of found geoobject
 
-            if (newSearchResult) {
-                const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);//get neccesary data from search result
+            const newPoint = {
+                geoObject,
+                id,
+                name,
+                coords,
+            };
 
-                //change our dragged geoobject
-                geoObject.properties.set('balloonContent', baloonContent);
-                geoObject.geometry.setCoordinates(coords);//move our point to cordinates of found geoobject
+            const {points} = this.state;
+            const newPoints = [...points];
+            const targetPointIndex = newPoints.findIndex(point => (point.id === id));//remove dragged point from list
+            newPoints[targetPointIndex] = newPoint;//add dragged point to a new position in list
 
-                const newPoint = {
-                    geoObject,
-                    id,
-                    name,
-                    coords,
-                };
-
-                const {points} = this.state;
-                const newPoints = [...points];
-                const targetPointIndex = newPoints.findIndex(point => (point.id === id));//remove dragged point from list
-                newPoints[targetPointIndex] = newPoint;//add dragged point to a new position in list
-
-                this.setState({
-                    points: newPoints,
-                }, this.paintPolyline);
-            }
-        });
+            this.setState({
+                points: newPoints,
+            }, this.paintPolyline);
+        }
     };
 
     deletePoint = (id) => {
@@ -141,6 +141,10 @@ class Main extends Component {
             //and if list is empty, use the old value
         }
 
+        //remove event listeners from geoobject
+        geoObject.events.remove('dragstart', this.onMapPointDragStart);
+        geoObject.events.remove('dragend', this.onMapPointDragEnd);
+
         this.yaMap.geoObjects.remove(geoObject);//remove target point from map
 
         this.setState({
@@ -151,10 +155,10 @@ class Main extends Component {
     initDNDonPointsList() {
         const dragContainer = document.querySelector('.pointList');
         this.dragAndDrop = dragula([dragContainer]);
-        this.dragAndDrop.on('drop', this.onDrop);
+        this.dragAndDrop.on('drop', this.onPointListDrop);
     }
 
-    onDrop = (elem, _, __, siblingElem) => {
+    onPointListDrop = (elem, _, __, siblingElem) => {
         const elemId = +elem.getAttribute('id'); //get dropped dom-elem's id
         const {points} = this.state;
 
@@ -178,6 +182,10 @@ class Main extends Component {
         this.setState({
             points: newPointsFiltered,
         }, this.updateMap);
+    };
+
+    onMapPointDragStart = () => {
+        this.deleteOldPolyline();
     };
 
 
