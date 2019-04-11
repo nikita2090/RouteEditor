@@ -68,10 +68,10 @@ class Main extends Component {
 
         if (searchResult) {
             const newPoint = this.createPointObj(searchResult);//create new Point object with necessary data
-            const {geoObject, coords} = newPoint;
+            const {geoObject} = newPoint;
             this.yaMap.geoObjects.add(geoObject);// add new point on map
             this.addDragEventsOnMapPoint(newPoint);//add event handlers for dragging points on the map
-            this.toCenter = coords; //save coords of our new point
+            this.toCenter = geoObject.geometry.getCoordinates();//save coords of our new point
             this.setState({
                 inputText: '',
                 points: [...points, newPoint],
@@ -88,6 +88,7 @@ class Main extends Component {
     addDragEventsOnMapPoint = (point) => {
         const {geoObject} = point;
         geoObject.events.add('dragstart', this.onMapPointDragStart);
+
         this.onMapPointDragEnd = this.changePoint.bind(this, point);
         geoObject.events.add('dragend', this.onMapPointDragEnd);
     };
@@ -105,17 +106,18 @@ class Main extends Component {
         }
 
         if (newSearchResult) {
-            const {name, coords, baloonContent} = this.getGeoObjData(newSearchResult);//get necessary data from search result
+            const name = newSearchResult.properties.get('name');
+            const baloonContent = newSearchResult.properties.get('balloonContent');
+            const coords = newSearchResult.geometry.getCoordinates();
 
             //change our dragged geoobject
             geoObject.properties.set('balloonContent', baloonContent);
+            geoObject.properties.set('name', name);
             geoObject.geometry.setCoordinates(coords);//move our point to coordinates of found geoobject
 
             const newPoint = {
                 geoObject,
-                id,
-                name,
-                coords,
+                id
             };
 
             const {points} = this.state;
@@ -137,7 +139,8 @@ class Main extends Component {
 
         if (newPoints.length) {
             //if list isn't empty use last point coordinates
-            this.toCenter = newPoints[newPoints.length - 1].coords;
+            const targetGeoObj = newPoints[newPoints.length - 1].geoObject;
+            this.toCenter = targetGeoObj.geometry.getCoordinates();
             //and if list is empty, use the old value
         }
 
@@ -173,12 +176,12 @@ class Main extends Component {
             newElemIndex = [...points].length; //if no dom-elem after dropped dom-elem
         }
 
-        const newPoints= [...points];
+        const newPoints = [...points];
         delete newPoints[targetPointIndex];// delete target point from old index
         newPoints.splice(newElemIndex, 0, targetPoint); //add elem to new place in list
         const newPointsFiltered = newPoints.filter((el) => (el));// delete "gaps" from list
 
-        this.toCenter = targetPoint.coords; //save coords of target point
+        this.toCenter = targetPoint.geoObject.geometry.getCoordinates(); //save coords of target point
         this.setState({
             points: newPointsFiltered,
         }, this.updateMap);
@@ -188,46 +191,31 @@ class Main extends Component {
         this.deleteOldPolyline();
     };
 
-
-    getGeoObjData = (geoObj) => {
-        const name = geoObj.properties.get('name');
-        const coords = geoObj.geometry.getCoordinates();
-        const baloonContent = geoObj.properties.get('balloonContent');
-
-        return {
-            name,
-            coords,
-            baloonContent
-        }
-    };
-
     createPointObj = (geoObj) => {
         const id = new Date().getTime();
-        const geoObjData = this.getGeoObjData(geoObj);
-        const {name, coords, baloonContent} = geoObjData;
+
         const geoObject = new ymaps.GeoObject({
             geometry: {
                 type: "Point",
-                coordinates: coords
+                coordinates: geoObj.geometry.getCoordinates()
             },
             properties: {
+                name: geoObj.properties.get('name'),
                 hintContent: 'Перетащите метку при необходимости',
-                balloonContent: baloonContent
+                balloonContent: geoObj.properties.get('balloonContent')
             },
         }, {draggable: true});
 
         return {
             geoObject,
-            id,
-            name,
-            coords
+            id
         }
     };
 
     paintPolyline = () => {
         this.deleteOldPolyline();
         const {points} = this.state;
-        const polylineCoords = points.map(point => (point.coords));//create new arr with coords of all points
+        const polylineCoords = points.map(point => ( point.geoObject.geometry.getCoordinates() ));//create new arr with coords of all points
 
         const polyline = new ymaps.Polyline(
             polylineCoords,

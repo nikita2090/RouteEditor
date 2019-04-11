@@ -6,13 +6,14 @@ import Point from '../point/Point';
 
 const PointsList = ({points, deletePoint}) => (
     <div className="pointList">
-        {points.map((point) => (
-            <Point key={point.id}
-                   value={point.name}
+        {points.map((point) => {
+            const name = point.geoObject.properties.get('name');
+            return(<Point key={point.id}
+                   value={name}
                    id={point.id}
                    deletePoint={deletePoint}
-            />
-        ))}
+            />)
+        })}
     </div>
 );
 
