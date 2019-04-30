@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Wrapper from './components/wrapper/Wrapper';
+import AppWrapper from './components/app-wrapper/AppWrapper';
 import Title from './components/title/Title';
 import Main from './container/main/Main';
 
@@ -8,10 +8,10 @@ import './App.css';
 
 
 const App = () => (
-    <Wrapper>
+    <AppWrapper>
         <Title text="Route Editor"/>
         <Main/>
-    </Wrapper>
+    </AppWrapper>
 );
 
 export default App;

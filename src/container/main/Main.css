@@ -2,3 +2,9 @@
     display: flex;
 }
 
+.pointsWrap {
+    flex: 1 1 45%;
+    box-sizing: border-box;
+    margin-right: 20px;
+}
+

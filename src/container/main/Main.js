@@ -1,7 +1,6 @@
 import React, {Component} from 'react';
 import dragula from 'react-dragula';
 
-import PointsWrap from '../../components/points-wrap/PointsWrap';
 import Input from '../../components/input/Input';
 import PointsList from '../../components/points-list/PointsList';
 import Map from '../../components/yandex-map/Map';
@@ -18,7 +17,6 @@ class Main extends Component {
             tooltip: false
         };
 
-        this.input = React.createRef();
         this.toCenter = [];
         this.route = null;
         this.yaMap = null; //instance of YandexMaps
@@ -33,8 +31,6 @@ class Main extends Component {
         } catch (err) {
             alert(err);
         }
-
-        this.input.current.focus();
         this.initDNDonPointsList();
     };
 
@@ -134,7 +130,7 @@ class Main extends Component {
     deletePoint = (id) => {
         const {points} = this.state;
         const targetPoint = points.find(point => (point.id === id)); //search target point object in list
-        const {geoObject} = targetPoint;
+
         const newPoints = points.filter(point => (point.id !== id));//delete target point from list
 
         if (newPoints.length) {
@@ -145,6 +141,7 @@ class Main extends Component {
         }
 
         //remove event listeners from geoobject
+        const {geoObject} = targetPoint;
         geoObject.events.remove('dragstart', this.onMapPointDragStart);
         geoObject.events.remove('dragend', this.onMapPointDragEnd);
 
@@ -171,9 +168,9 @@ class Main extends Component {
         let newElemIndex;
         if (siblingElem) {
             const siblingElemId = +siblingElem.getAttribute('id'); //get id of dom-elem that comes after dropped elem
-            newElemIndex = [...points].findIndex(point => (point.id === siblingElemId));
+            newElemIndex = points.findIndex(point => (point.id === siblingElemId));
         } else {
-            newElemIndex = [...points].length; //if no dom-elem after dropped dom-elem
+            newElemIndex = points.length; //if no dom-elem after dropped dom-elem
         }
 
         const newPoints = [...points];
@@ -254,15 +251,14 @@ class Main extends Component {
         const {inputText, tooltip, points} = this.state;
         return (
             <main className="main">
-                <PointsWrap>
+                <div className="pointsWrap">
                     <Input value={inputText}
                            handleInputChange={this.handleInputChange}
                            onEnterPress={this.onEnterPress}
-                           tooltip={tooltip}
-                           ref={this.input}/>
+                           tooltip={tooltip}/>
                     <PointsList points={points}
                                 deletePoint={this.deletePoint}/>
-                </PointsWrap>
+                </div>
                 <Map/>
             </main>
         );

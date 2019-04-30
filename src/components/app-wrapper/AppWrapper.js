@@ -1,20 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import './Wrapper.css';
+import './AppWrapper.css';
 
 
-const Wrapper = ({children}) => (
+const AppWrapper = ({children}) => (
     <div className="wrapper">{children}</div>
 );
 
 
-Wrapper.propTypes = {
+AppWrapper.propTypes = {
     children: PropTypes.node
 };
 
-Wrapper.defaultProps = {
+AppWrapper.defaultProps = {
     children: null
 };
 
-export default Wrapper;
+export default AppWrapper;

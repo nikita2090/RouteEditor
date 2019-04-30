@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import './Input.css';
 
 
-const Input = React.forwardRef(({value, handleInputChange, onEnterPress, tooltip}, ref) => (
+const Input = ({value, handleInputChange, onEnterPress, tooltip}) => (
     <>
     {tooltip && <div className="tooltip">not found</div>}
     <input type="text"
@@ -13,10 +13,10 @@ const Input = React.forwardRef(({value, handleInputChange, onEnterPress, tooltip
            onChange={handleInputChange}
            onKeyPress={onEnterPress}
            placeholder="Search..."
-           ref={ref}
+           autoFocus
     />
     </>
-));
+);
 
 
 Input.propTypes = {
