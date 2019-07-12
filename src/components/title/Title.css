@@ -1,9 +1,22 @@
-.title {
-    text-align: center;
-    font-size: 48px;
-    color: black;
-    margin: 0 0 20px;
-    font-family: 'Roboto', sans-serif;
+@media screen and (min-width: 300px){
+    .title {
+        text-align: center;
+        font-size: 24px;
+        color: black;
+        margin: 0 0 20px;
+        font-family: 'Roboto', sans-serif;
+    }
 }
+
+@media screen and (min-width: 768px){
+    .title {
+        text-align: center;
+        font-size: 48px;
+        color: black;
+        margin: 0 0 20px;
+        font-family: 'Roboto', sans-serif;
+    }
+}
+
 
 

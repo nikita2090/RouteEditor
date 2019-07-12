@@ -98,7 +98,7 @@ class Main extends Component {
             const geocoder = await ymaps.geocode(coordsForSearch);
             newSearchResult = await geocoder.geoObjects.get(0);
         } catch (err) {
-            alert('Too Many Requests');
+            alert(err);
         }
 
         if (newSearchResult) {
